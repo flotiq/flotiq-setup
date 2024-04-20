@@ -59,27 +59,30 @@ function localListener() {
       );
 
       // Save the token to .env file
-      await saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env");
-      await saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env");
-      await saveTokenToEnv(
+      saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env");
+      saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env");
+      saveTokenToEnv(
         "GATSBY_FLOTIQ_API_KEY",
         api_key,
         ".env.development"
       );
-      await saveTokenToEnv(
+      saveTokenToEnv(
         "FLOTIQ_API_KEY",
         api_key,
         ".env.development"
       );
 
       res.send("Authentication successful! You can close this window.");
-      
+      console.log(chalk.bgWhite.hex("#0083FC").inverse("Your .env files have been adjusted with your Flotiq API keys. You can close this terminal."));
+
       setTimeout(() => {
         server.close(() => {
           console.log(chalk.blue("Server closed."));
           process.exit(0); // Exit with a 'success' code
         });
       }, 100);
+
+      
 
     } catch (error) {
       console.error(chalk.red("Failed to exchange token:"), error);
@@ -95,13 +98,13 @@ function localListener() {
     );
   });
 
-  async function saveTokenToEnv(key, value, file) {
+  function saveTokenToEnv(key, value, file) {
     const envFilePath = path.resolve(process.cwd(), file);
 
     // Check if .env file exists, if not, create it
     if (!fs.existsSync(envFilePath)) {
       fs.writeFileSync(envFilePath, "", { encoding: "utf8" });
-      console.log(chalk.magenta(".env file created"));
+      //console.log(chalk.magenta(".env file created"));
     }
 
     const envConfig = dotenv.parse(fs.readFileSync(envFilePath));

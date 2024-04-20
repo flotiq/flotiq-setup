@@ -1,6 +1,6 @@
 {
   "name": "flotiq-setup",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Flotiq-setup makes it easier to connect your projects to Flotiq",
   "main": "index.mjs",
   "bin": {
