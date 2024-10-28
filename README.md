@@ -28,7 +28,6 @@ Commands:
 
 Options:
       --version  Show version number                                   [boolean]
-  -u, --apiUrl   Flotiq API URL  [string] [default: "https://api.flotiq.com/v1"]
   -a, --authUrl  Authentication endpoint
                            [string] [default: "https://editor.flotiq.com/login"]
   -h, --help     Show help                                             [boolean]
