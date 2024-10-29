@@ -17,7 +17,7 @@ const noStoreFlag = "no-store";
  */
 async function setup(authUrl, logger, roKey, rwKey, noStore) {
 
-    loginRedirect(authUrl, LOCAL_REDIRECT_PORT, rwKey);
+    loginRedirect(authUrl, LOCAL_REDIRECT_PORT, roKey, rwKey);
 
     const app = express();
     let key, key_rw, status;

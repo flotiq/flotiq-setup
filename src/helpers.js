@@ -8,8 +8,15 @@ const openurl = require('openurl');
  * This function opens the Flotiq login screen and requests a redirect
  * to local Express server.
  */
-function loginRedirect(authUrl, port, rwKey = false) {
-    const url = `${authUrl}?response_type=code&rw_key=${rwKey ? 'true' : 'false'}&redirect_uri=http://localhost:${port}/callback`;
+function loginRedirect(authUrl, port, roKey, rwKey) {
+
+    let keyType = rwKey ? 'rw' : 'ro'
+
+    if (roKey && rwKey) {
+        keyType = 'both';
+    }
+
+    const url = `${authUrl}?response_type=code&key_type=${keyType}&redirect_uri=http://localhost:${port}/callback`;
     openurl.open(url);
 }
 
