@@ -1,6 +1,3 @@
-const fs = require("fs");
-const path = require("path");
-const dotenv = require("dotenv");
 const chalk = require("chalk");
 const express = require("express");
 const {loginRedirect, saveTokenToEnv} = require("../src/helpers");
@@ -126,6 +123,7 @@ const main = async (argv) => {
     const logger = silent ? silentLogger : console;
 
     try {
+        //@todo for tests change authUrl to localhost
         await setup(authUrl, logger, roKey, rwKey, noStore);
         process.exit(0);
     } catch (e) {
