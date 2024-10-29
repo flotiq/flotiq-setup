@@ -3,7 +3,6 @@ const express = require("express");
 const {loginRedirect, saveTokenToEnv} = require("../src/helpers");
 const {number} = require("yargs");
 
-
 const LOCAL_REDIRECT_PORT = 5989;
 const authUrlFlag = "authUrl";
 const roKeyFlag = "ro-key";
@@ -20,8 +19,6 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
     loginRedirect(authUrl, LOCAL_REDIRECT_PORT, roKey, rwKey);
 
     const app = express();
-    let key, key_rw, status;
-
     const startServer = async () => {
         return new Promise((resolve, reject) => {
             const server = app.listen(LOCAL_REDIRECT_PORT, () => {
@@ -37,7 +34,8 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
             }
 
             app.get("/callback", (req, res) => {
-                ({key, key_rw, status} = req.query);
+                const {api_key, key_rw, status} = req.query;
+
                 if (status === 'rejected' || status === 'failed') {
                     res.status(500).send("Authentication failed, check CLI output for more information");
                     closeServer();
@@ -48,13 +46,18 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
                 try {
                     roKey && logger.log(
                         chalk.bgWhite.hex("#0083FC").inverse("Your FLOTIQ_API_KEY:"),
-                        chalk.yellow(key)
+                        chalk.yellow(api_key)
                     );
 
                     rwKey && logger.log(
                         chalk.bgWhite.hex("#0083FC").inverse("Your FLOTIQ_RW_API_KEY:"),
                         chalk.yellow(key_rw)
                     );
+
+                    resolve({
+                        ...(roKey && {FLOTIQ_API_KEY: api_key}),
+                        ...(rwKey && {FLOTIQ_RW_API_KEY: key_rw}),
+                    });
 
                     res.send("Auth  entication successful! You can close this window.");
 
@@ -64,37 +67,28 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
                     }
 
                     // Save the token to .env file
-                    saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", key, ".env", logger);
-                    saveTokenToEnv("FLOTIQ_API_KEY", key, ".env", logger);
-                    saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", key, ".env.development", logger);
-                    saveTokenToEnv("FLOTIQ_API_KEY", key, ".env.development", logger);
+                    saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env", logger);
+                    saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env", logger);
+                    saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env.development", logger);
+                    saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env.development", logger);
+
+                    if (rwKey) {
+                        saveTokenToEnv("FLOTIQ_RW_API_KEY", key_rw, ".env", logger);
+                        saveTokenToEnv("FLOTIQ_RW_API_KEY", key_rw, ".env.development", logger);
+                    }
 
                     logger.log(chalk.bgWhite.hex("#0083FC").inverse("Your .env files have been adjusted with your Flotiq API keys. You can close this terminal."));
 
                     closeServer();
-
                 } catch (error) {
                     logger.error(chalk.red("Failed to exchange token:"), error);
                     res.status(500).send("Authentication failed, check CLI output for more information");
                 }
             });
-
-            server.on("close", () => {
-                resolve();
-            });
         })
     }
 
-    try {
-        await startServer();
-    } catch (e) {
-        throw e;
-    }
-
-    return {
-        ...(roKey && {FLOTIQ_API_KEY: key}),
-        ...(rwKey && {FLOTIQ_RW_API_KEY: key_rw}),
-    };
+    return await startServer();
 }
 
 const silentLogger = {
@@ -124,8 +118,7 @@ const main = async (argv) => {
 
     try {
         //@todo for tests change authUrl to localhost
-        await setup(authUrl, logger, roKey, rwKey, noStore);
-        process.exit(0);
+        return await setup('http://localhost:3000/login', logger, roKey, rwKey, noStore);
     } catch (e) {
         let message;
 
@@ -142,13 +135,11 @@ const main = async (argv) => {
         }
 
         logger.error(chalk.red(message), e);
-        process.exit(1);
     }
-
 }
 
 module.exports = {
-    command: 'flotiq-setup [options]',
+    command: '$0 [options]',
     describe: 'Use flotiq-setup to authenticate your local project using Global Read-Only key',
     builder: (yargs) => {
         return yargs

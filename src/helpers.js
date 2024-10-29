@@ -2,22 +2,27 @@ const path = require("path");
 const fs = require("fs");
 const dotenv = require("dotenv");
 const chalk = require("chalk");
-const openurl = require('openurl');
+const open = require('open');
 
 /**
  * This function opens the Flotiq login screen and requests a redirect
  * to local Express server.
  */
 function loginRedirect(authUrl, port, roKey, rwKey) {
-
     let keyType = rwKey ? 'rw' : 'ro'
 
     if (roKey && rwKey) {
         keyType = 'both';
     }
 
-    const url = `${authUrl}?response_type=code&key_type=${keyType}&redirect_uri=http://localhost:${port}/callback`;
-    openurl.open(url);
+    const url = new URL(authUrl);
+
+    url.searchParams.append('response_type', 'code');
+    url.searchParams.append('key_type', keyType);
+    url.searchParams.append('application_name', 'Flotiq Setup CLI');
+    url.searchParams.append('redirect_uri', `http://localhost:${port}/callback`);
+
+    open(url.toString());
 }
 
 function saveTokenToEnv(key, value, file, logger) {
