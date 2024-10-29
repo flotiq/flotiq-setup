@@ -2,108 +2,151 @@ const fs = require("fs");
 const path = require("path");
 const dotenv = require("dotenv");
 const chalk = require("chalk");
-const openurl = require('openurl');
 const express = require("express");
+const {loginRedirect, saveTokenToEnv} = require("../src/helpers");
+const {number} = require("yargs");
 
 
 const LOCAL_REDIRECT_PORT = 5989;
-
-/**
- * This function opens the Flotiq login screen and requests a redirect
- * to local Express server.
- */
-function loginRedirect(authUrl) {
-    const url = `${authUrl}?response_type=code&redirect_uri=http://localhost:${LOCAL_REDIRECT_PORT}/callback`;
-    openurl.open(url);
-}
+const authUrlFlag = "authUrl";
+const roKeyFlag = "ro-key";
+const rwKeyFlag = "rw-key";
+const silentFlag = "silent";
+const noStoreFlag = "no-store";
 
 /**
  * This function creates a local Express server and listens on LOCAL_REDIRECT_PORT
  * once it receives the redirect from user's browser - it fills in the .env files
  */
-function setup(authUrl) {
+async function setup(authUrl, logger, roKey, rwKey, noStore) {
 
-    loginRedirect(authUrl);
+    loginRedirect(authUrl, LOCAL_REDIRECT_PORT, rwKey);
 
     const app = express();
+    let key, key_rw, status;
 
-    app.get("/callback", async (req, res, next) => {
-        const {api_key} = req.query;
+    const startServer = async () => {
+        return new Promise((resolve, reject) => {
+            const server = app.listen(LOCAL_REDIRECT_PORT, () => {
+                logger.log(chalk.blue(`Server listening at http://localhost:${LOCAL_REDIRECT_PORT}`));
+            });
 
-        try {
-            console.log(
-                chalk.bgWhite.hex("#0083FC").inverse("Your FLOTIQ_API_KEY:"),
-                chalk.yellow(api_key)
-            );
+            const closeServer = () => {
+                setTimeout(() => {
+                    server.close(() => {
+                        logger.log(chalk.blue("Server closed."));
+                    });
+                }, 100);
+            }
 
-            // Save the token to .env file
-            saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env");
-            saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env");
-            saveTokenToEnv(
-                "GATSBY_FLOTIQ_API_KEY",
-                api_key,
-                ".env.development"
-            );
-            saveTokenToEnv(
-                "FLOTIQ_API_KEY",
-                api_key,
-                ".env.development"
-            );
+            app.get("/callback", (req, res) => {
+                ({key, key_rw, status} = req.query);
+                if (status === 'rejected' || status === 'failed') {
+                    res.status(500).send("Authentication failed, check CLI output for more information");
+                    closeServer();
+                    reject(status);
+                    return;
+                }
 
-            res.send("Authentication successful! You can close this window.");
-            console.log(chalk.bgWhite.hex("#0083FC").inverse("Your .env files have been adjusted with your Flotiq API keys. You can close this terminal."));
+                try {
+                    roKey && logger.log(
+                        chalk.bgWhite.hex("#0083FC").inverse("Your FLOTIQ_API_KEY:"),
+                        chalk.yellow(key)
+                    );
 
-            setTimeout(() => {
-                server.close(() => {
-                    console.log(chalk.blue("Server closed."));
-                    process.exit(0); // Exit with a 'success' code
-                });
-            }, 100);
+                    rwKey && logger.log(
+                        chalk.bgWhite.hex("#0083FC").inverse("Your FLOTIQ_RW_API_KEY:"),
+                        chalk.yellow(key_rw)
+                    );
 
+                    res.send("Auth  entication successful! You can close this window.");
 
-        } catch (error) {
-            console.error(chalk.red("Failed to exchange token:"), error);
-            res
-                .status(500)
-                .send("Authentication failed, check CLI output for more information");
-        }
-    });
+                    if (noStore) {
+                        closeServer();
+                        return;
+                    }
 
-    const server = app.listen(LOCAL_REDIRECT_PORT, () => {
-        console.log(
-            chalk.blue(`Server listening at http://localhost:${LOCAL_REDIRECT_PORT}`)
-        );
-    });
+                    // Save the token to .env file
+                    saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", key, ".env", logger);
+                    saveTokenToEnv("FLOTIQ_API_KEY", key, ".env", logger);
+                    saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", key, ".env.development", logger);
+                    saveTokenToEnv("FLOTIQ_API_KEY", key, ".env.development", logger);
 
-    function saveTokenToEnv(key, value, file) {
-        const envFilePath = path.resolve(process.cwd(), file);
+                    logger.log(chalk.bgWhite.hex("#0083FC").inverse("Your .env files have been adjusted with your Flotiq API keys. You can close this terminal."));
 
-        // Check if .env file exists, if not, create it
-        if (!fs.existsSync(envFilePath)) {
-            fs.writeFileSync(envFilePath, "", {encoding: "utf8"});
-            //console.log(chalk.magenta(".env file created"));
-        }
+                    closeServer();
 
-        const envConfig = dotenv.parse(fs.readFileSync(envFilePath));
+                } catch (error) {
+                    logger.error(chalk.red("Failed to exchange token:"), error);
+                    res.status(500).send("Authentication failed, check CLI output for more information");
+                }
+            });
 
-        // Update or add the key-value pair in the env file
-        envConfig[key] = value;
-        const newEnvContent = Object.keys(envConfig)
-            .map((k) => `${k}=${envConfig[k]}`)
-            .join("\n");
-
-        fs.writeFileSync(envFilePath, newEnvContent);
-        console.log(chalk.green(`${key} updated in`), chalk.yellow(file));
+            server.on("close", () => {
+                resolve();
+            });
+        })
     }
+
+    try {
+        await startServer();
+    } catch (e) {
+        throw e;
+    }
+
+    return {
+        ...(roKey && {FLOTIQ_API_KEY: key}),
+        ...(rwKey && {FLOTIQ_RW_API_KEY: key_rw}),
+    };
 }
+
+const silentLogger = {
+    log: () => {
+    },
+    error: () => {
+    },
+    warn: () => {
+    },
+    info: () => {
+    },
+    debug: () => {
+    },
+};
 
 /**
  * Run setup command
- * @param {{apiUrl: string, authUrl: string}} argv
+ * @param {{authUrl: string, roKey: boolean, rwKey: boolean, silent: boolean, noStore: boolean}} argv
  */
-const main = (argv) => {
+const main = async (argv) => {
     const authUrl = argv.authUrl;
-    setup(authUrl);
+    const roKey = argv.roKey;
+    const rwKey = argv.rwKey;
+    const noStore = argv.noStore;
+    const silent = argv.silent;
+    const logger = silent ? silentLogger : console;
+
+    try {
+        await setup(authUrl, logger, roKey, rwKey, noStore);
+        process.exit(0);
+    } catch (e) {
+        let message;
+
+        switch (e) {
+            case 'rejected':
+                message = 'User did not consent to provide the keys. Authorization process has been terminated.';
+                break;
+            case 'failed':
+                message = 'A system error occurred during the authorization attempt. Please try again later.';
+                break;
+            default:
+                message = 'A system error occurred. Please try again later.';
+                break;
+        }
+
+        logger.error(chalk.red(message), e);
+        process.exit(1);
+    }
+
 }
 
 module.exports = {
@@ -111,13 +154,40 @@ module.exports = {
     describe: 'Use flotiq-setup to authenticate your local project using Global Read-Only key',
     builder: (yargs) => {
         return yargs
-            .option("authUrl", {
+            .option(authUrlFlag, {
                 description: "Authentication endpoint",
                 alias: "a",
                 type: "string",
                 default: "https://editor.flotiq.com/login",
             })
-
+            .option(roKeyFlag, {
+                description: "Return Read only Flotiq api key as FLOTIQ_API_KEY",
+                alias: "r",
+                type: "boolean",
+                default: true,
+                demandOption: false,
+            })
+            .option(rwKeyFlag, {
+                description: "Return Read and Write Flotiq api key as FLOTIQ_RW_API_KEY",
+                alias: "w",
+                type: "boolean",
+                default: false,
+                demandOption: false,
+            })
+            .option(silentFlag, {
+                description: "Suppress console output. Assumes no for all prompts.",
+                alias: "s",
+                type: "boolean",
+                default: false,
+                demandOption: false,
+            })
+            .option(noStoreFlag, {
+                description: "Disable saving Flotiq api keys into env files",
+                alias: "n",
+                type: "boolean",
+                default: false,
+                demandOption: false,
+            })
     },
     handler: main,
     setup
