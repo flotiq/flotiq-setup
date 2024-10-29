@@ -34,7 +34,7 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
             }
 
             app.get("/callback", (req, res) => {
-                const {api_key, key_rw, status} = req.query;
+                const {api_key, api_key_rw, status} = req.query;
 
                 if (status === 'rejected' || status === 'failed') {
                     res.status(500).send("Authentication failed, check CLI output for more information");
@@ -51,12 +51,12 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
 
                     rwKey && logger.log(
                         chalk.bgWhite.hex("#0083FC").inverse("Your FLOTIQ_RW_API_KEY:"),
-                        chalk.yellow(key_rw)
+                        chalk.yellow(api_key_rw)
                     );
 
                     resolve({
                         ...(roKey && {FLOTIQ_API_KEY: api_key}),
-                        ...(rwKey && {FLOTIQ_RW_API_KEY: key_rw}),
+                        ...(rwKey && {FLOTIQ_RW_API_KEY: api_key_rw}),
                     });
 
                     res.send("Auth  entication successful! You can close this window.");
@@ -73,8 +73,8 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
                     saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env.development", logger);
 
                     if (rwKey) {
-                        saveTokenToEnv("FLOTIQ_RW_API_KEY", key_rw, ".env", logger);
-                        saveTokenToEnv("FLOTIQ_RW_API_KEY", key_rw, ".env.development", logger);
+                        saveTokenToEnv("FLOTIQ_RW_API_KEY", api_key_rw, ".env", logger);
+                        saveTokenToEnv("FLOTIQ_RW_API_KEY", api_key_rw, ".env.development", logger);
                     }
 
                     logger.log(chalk.bgWhite.hex("#0083FC").inverse("Your .env files have been adjusted with your Flotiq API keys. You can close this terminal."));
@@ -118,7 +118,7 @@ const main = async (argv) => {
 
     try {
         //@todo for tests change authUrl to localhost
-        return await setup('http://localhost:3000/login', logger, roKey, rwKey, noStore);
+        return await setup(authUrl, logger, roKey, rwKey, noStore);
     } catch (e) {
         let message;
 
