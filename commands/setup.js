@@ -119,7 +119,6 @@ const main = async (argv) => {
     const logger = silent ? silentLogger : console;
 
     try {
-        //@todo for tests change authUrl to localhost
         return await setup(authUrl, logger, roKey, rwKey, noStore);
     } catch (e) {
         let message;
