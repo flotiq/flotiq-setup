@@ -25,20 +25,23 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
                 logger.log(chalk.blue(`Server listening at http://localhost:${LOCAL_REDIRECT_PORT}`));
             });
 
+            server.on("connection", (client) => {
+                client.setTimeout(100); // 100 ms keepalive timeout allows for instant server close after response
+            });
+
             const closeServer = () => {
-                setTimeout(() => {
-                    server.close(() => {
-                        logger.log(chalk.blue("Server closed."));
-                    });
-                }, 100);
+                server.close(() => {
+                    logger.log(chalk.blue("Server closed."));
+                });
             }
 
             app.get("/callback", (req, res) => {
                 const {api_key, api_key_rw, status} = req.query;
-
+                res.on("finish", () => {
+                    closeServer();
+                });
                 if (status === 'rejected' || status === 'failed') {
                     res.status(500).send("Authentication failed, check CLI output for more information");
-                    closeServer();
                     reject(status);
                     return;
                 }
@@ -62,16 +65,16 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
                     res.send("Auth  entication successful! You can close this window.");
 
                     if (noStore) {
-                        closeServer();
                         return;
                     }
 
                     // Save the token to .env file
-                    saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env", logger);
-                    saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env", logger);
-                    saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env.development", logger);
-                    saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env.development", logger);
-
+                    if(roKey) {
+                        saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env", logger);
+                        saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env", logger);
+                        saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env.development", logger);
+                        saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env.development", logger);
+                    }
                     if (rwKey) {
                         saveTokenToEnv("FLOTIQ_RW_API_KEY", api_key_rw, ".env", logger);
                         saveTokenToEnv("FLOTIQ_RW_API_KEY", api_key_rw, ".env.development", logger);
@@ -79,7 +82,6 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
 
                     logger.log(chalk.bgWhite.hex("#0083FC").inverse("Your .env files have been adjusted with your Flotiq API keys. You can close this terminal."));
 
-                    closeServer();
                 } catch (error) {
                     logger.error(chalk.red("Failed to exchange token:"), error);
                     res.status(500).send("Authentication failed, check CLI output for more information");
@@ -109,7 +111,7 @@ const silentLogger = {
  * @param {{authUrl: string, roKey: boolean, rwKey: boolean, silent: boolean, noStore: boolean}} argv
  */
 const main = async (argv) => {
-    const authUrl = argv.authUrl;
+    const authUrl = argv.authUrl || 'https://editor.flotiq.com/login';
     const roKey = argv.roKey;
     const rwKey = argv.rwKey;
     const noStore = argv.noStore;
