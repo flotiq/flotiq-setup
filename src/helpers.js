@@ -26,7 +26,7 @@ function loginRedirect(authUrl, port, roKey, rwKey) {
     open(url.toString());
 }
 
-function saveTokenToEnv(key, value, files, logger) {
+function saveTokenToEnv(key, value, files, logger, comment = '') {
     files.forEach((file) => {
         const envFilePath = path.resolve(process.cwd(), file);
 
@@ -38,10 +38,25 @@ function saveTokenToEnv(key, value, files, logger) {
 
         const envConfig = dotenvFlow.parse(envFilePath);
 
-        if (typeof envConfig[key] === "undefined") {
-            fs.appendFileSync(`${envFilePath}`, `\n${key}=${value}`);
-            logger.log(chalk.green(`${key} updated in`), chalk.yellow(file));
+        let envKey = ``;
+        if (comment) {
+            envKey += `\n# ${comment}`
         }
+        envKey += `\n${key}=${value}\n`
+
+
+        // env variable exists but is empty
+        if (!envConfig[key] && typeof envConfig[key] !== "undefined") {
+            const fileContent = fs.readFileSync(envFilePath, {encoding: "utf8"});
+            const updatedContent = fileContent.replace(`${key}=`, '');
+
+            fs.writeFileSync(envFilePath, updatedContent);
+            fs.appendFileSync(envFilePath, envKey);
+        } else if (typeof envConfig[key] === "undefined") {
+            fs.appendFileSync(envFilePath, envKey);
+        }
+
+        logger.log(chalk.green(`${key} updated in`), chalk.yellow(file));
     });
 }
 
