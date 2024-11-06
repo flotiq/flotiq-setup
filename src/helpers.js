@@ -54,6 +54,9 @@ function saveTokenToEnv(key, value, files, logger, comment = '') {
             fs.appendFileSync(envFilePath, envKey);
         } else if (typeof envConfig[key] === "undefined") {
             fs.appendFileSync(envFilePath, envKey);
+        } else if (envConfig[key] && typeof envConfig[key] !== "undefined") {
+            logger.log(chalk.yellow(`${key} already exists in`), chalk.yellow(file));
+            return;
         }
 
         logger.log(chalk.green(`${key} updated in`), chalk.yellow(file));
