@@ -181,7 +181,14 @@ destroy@1.2.0:
   resolved "https://registry.npmjs.org/destroy/-/destroy-1.2.0.tgz"
   integrity sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==
 
-dotenv@^16.4.5:
+dotenv-flow@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/dotenv-flow/-/dotenv-flow-4.1.0.tgz#a78e79dcaf08a48200192eb5ed1e5af11062b861"
+  integrity sha512-0cwP9jpQBQfyHwvE0cRhraZMkdV45TQedA8AAUZMsFzvmLcQyc1HPv+oX0OOYwLFjIlvgVepQ+WuQHbqDaHJZg==
+  dependencies:
+    dotenv "^16.0.0"
+
+dotenv@^16.0.0, dotenv@^16.4.5:
   version "16.4.5"
   resolved "https://registry.npmjs.org/dotenv/-/dotenv-16.4.5.tgz"
   integrity sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==

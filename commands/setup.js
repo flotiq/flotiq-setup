@@ -69,15 +69,12 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
                     }
 
                     // Save the token to .env file
-                    if(roKey) {
-                        saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env", logger);
-                        saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env", logger);
-                        saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, ".env.development", logger);
-                        saveTokenToEnv("FLOTIQ_API_KEY", api_key, ".env.development", logger);
+                    if (roKey) {
+                        saveTokenToEnv("GATSBY_FLOTIQ_API_KEY", api_key, [".env", ".env.development"], logger);
+                        saveTokenToEnv("FLOTIQ_API_KEY", api_key, [".env", ".env.development"], logger);
                     }
                     if (rwKey) {
-                        saveTokenToEnv("FLOTIQ_RW_API_KEY", api_key_rw, ".env", logger);
-                        saveTokenToEnv("FLOTIQ_RW_API_KEY", api_key_rw, ".env.development", logger);
+                        saveTokenToEnv("FLOTIQ_RW_API_KEY", api_key_rw, [".env", ".env.development"], logger);
                     }
 
                     logger.log(chalk.bgWhite.hex("#0083FC").inverse("Your .env files have been adjusted with your Flotiq API keys. You can close this terminal."));
@@ -92,7 +89,6 @@ async function setup(authUrl, logger, roKey, rwKey, noStore) {
 
     return await startServer();
 }
-
 const silentLogger = {
     log: () => {
     },
