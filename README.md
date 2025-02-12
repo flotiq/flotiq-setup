@@ -2,9 +2,7 @@
     <img src="https://editor.flotiq.com/fonts/fq-logo.svg" alt="Flotiq logo" title="Flotiq" align="right" height="60" />
 </a>
 
-
-flotiq-setup
-============
+# flotiq-setup
 
 This command makes it super-easy to fill in the local `.env` files with Flotiq API key.
 By default the Global Read-Only key is used.
@@ -30,6 +28,8 @@ Options:
   -w, --rw-key    Return Read and Write Flotiq api key as FLOTIQ_RW_API_KEY  [boolean] [default: false]
   -s, --silent    Suppress console output. Assumes no for all prompts.       [boolean] [default: false]
   -n, --no-store  Disable saving Flotiq api keys into env files              [boolean] [default: false]
+      --nextjs    Generate variables and .env files relevant to Next.js      [boolean] [default: false]
+                  (.env file only and only FLOTIQ_* variables)
   -h, --help      Show help                                                  [boolean]
 ```
 
@@ -48,12 +48,17 @@ This is especially useful when you are using `flotiq-setup` with other automatio
 You can use command handler in your scripts by importing command handler
 
 ```javascript
-const {handler} = require('flotiq-setup/commands/setup');
+const { handler } = require("flotiq-setup/commands/setup");
 
-await handler({authUrl: 'https://editor.flotiq.com/login', roKey: true, rwKey: true, silent: false, noStore: false});
+await handler({
+    authUrl: "https://editor.flotiq.com/login",
+    roKey: true,
+    rwKey: true,
+    silent: false,
+    noStore: false,
+    nextjs: false,
+});
 ```
-
-
 
 ## Collaborating
 
