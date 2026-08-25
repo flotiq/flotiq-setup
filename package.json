@@ -6,6 +6,9 @@
   "bin": {
     "flotiq-setup": "./index.js"
   },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "start": "node index.js",
     "prettier": "prettier . --write"
