@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const chalk = require("chalk");
-const open = require("open");
+const open = require("open").default;
 const dotenvFlow = require("dotenv-flow");
 
 /**

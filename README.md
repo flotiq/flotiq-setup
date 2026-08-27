@@ -19,7 +19,7 @@ npx flotiq-setup
 Use flotiq-setup to authenticate your local project using Global Read-Only key
 
 Commands:
-  index.mjs flotiq-setup [options]  Connect the project with Flotiq
+  index.js flotiq-setup [options]  Connect the project with Flotiq
 
 Options:
       --version   Show version number                                        [boolean]
@@ -33,7 +33,7 @@ Options:
   -h, --help      Show help                                                  [boolean]
 ```
 
-## Surpressing output messages
+## Suppressing output messages
 
 If you don't want to receive output messages, pass `--silent`/`-s` option to limit number of logs.
 
